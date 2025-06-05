@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, use } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "@mui/material/Button";
 import Modal from "@mui/material/Modal";
@@ -26,48 +26,47 @@ const modalStyle = {
   borderRadius: "8px",
 };
 
-const CustomerExecutives = () => {
+function Agents() {
   const navigate = useNavigate();
   const nameRef = useRef();
-  const [executives, setExecutives] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [itemPerPage, setItemPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [branchId, setbranchId] = useState("");
-  const [newExecutive, setNewExecutive] = useState({ name: "", email: "", password: "" });
+  const [branchId, setBranchId] = useState("");
+  const [newAgent, setNewAgent] = useState({ name: "", email: "", password: "" });
   const [suspendedStatus, setSuspendedStatus] = useState({});
   const token = localStorage.getItem("authToken");
   const totalPages = Math.ceil(filteredUsers.length / itemPerPage);
   const startIdx = (currentPage - 1) * itemPerPage;
   const currentUsers = filteredUsers.slice(startIdx, startIdx + itemPerPage);
 
-
-    const fetchUserData = async () => {
-      try {
-        const res = await Axios.get('/api/v1/user/details', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.data.success) {
-            console.log(res.data.user,"userId")
-          setbranchId(res.data.user.branchId);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-      }
-    };
-
-
-  // Fetch all executives
-  const fetchExecutives = async () => {
+  const fetchUserData = async () => {
     try {
-      const { data } = await Axios.get(`/api/executive/all?branchId=${branchId}`,{headers: { Authorization: `Bearer ${token}` }});
-      setExecutives(data.executives);
-      setFilteredUsers(data.executives);
+      const res = await Axios.get('/api/v1/user/details', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data.success) {
+          console.log(res.data.user,"userId")
+        setBranchId(res.data.user.branchId);
+      }
     } catch (error) {
-      console.error("Error fetching executives:", error);
+      console.error('Failed to fetch user data:', error);
+    }
+  };
+
+
+  // Fetch all agents
+  const fetchAgents = async () => {
+    try {
+      const { data } = await Axios.get(`/api/agent/all?branchId=${branchId}`,{headers: { Authorization: `Bearer ${token}` }});
+      setAgents(data.agents);
+      setFilteredUsers(data.agents);
+    } catch (error) {
+      console.error("Error fetching agents:", error);
     }
   };
 
@@ -76,19 +75,19 @@ const CustomerExecutives = () => {
   }, []);
   useEffect(() => {
     if (branchId){
-    fetchExecutives();
+    fetchAgents();
   }}, [branchId]);
 
   const debouncedSearch = useCallback(
     debounce(() => {
       const searchTerm = nameRef.current.value.toLowerCase();
-      const filtered = executives.filter((user) =>
+      const filtered = agents.filter((user) =>
         user.name.toLowerCase().includes(searchTerm)
       );
       setFilteredUsers(filtered);
       setCurrentPage(1);
     }, 300),
-    [executives]
+    [agents]
   );
 
   const handleSearchChange = () => {
@@ -97,19 +96,19 @@ const CustomerExecutives = () => {
 
   const toggleSuspend = async (id) => {
     try {
-      const executive = executives.find((exec) => exec._id === id);
-      const currentStatus = executive.status;
+      const agent = agents.find((exec) => exec._id === id);
+      const currentStatus = agent.status;
       const newStatus = currentStatus === "active" ? "suspended" : "active";
 
-      await Axios.put(`/api/executive/status/${id}`, { status: newStatus });
+      await Axios.put(`/api/agent/status/${id}`, { status: newStatus });
 
-      // Update both executives and filteredUsers state
+      // Update both agents and filteredUsers state
       const updateStatus = (arr) =>
         arr.map((exec) =>
           exec._id === id ? { ...exec, status: newStatus } : exec
         );
 
-      setExecutives((prev) => updateStatus(prev));
+      setAgents((prev) => updateStatus(prev));
       setFilteredUsers((prev) => updateStatus(prev));
 
     } catch (error) {
@@ -124,37 +123,37 @@ const CustomerExecutives = () => {
 
   const handleEditSave = async () => {
     try {
-      await Axios.put(`/api/executive/edit/${selectedUser._id}`, selectedUser);
-      fetchExecutives(); // Refresh the list
+      await Axios.put(`/api/agent/edit/${selectedUser._id}`, selectedUser);
+      fetchAgents(); // Refresh the list
       setEditModalOpen(false);
     } catch (error) {
-      console.error("Error saving executive:", error);
+      console.error("Error saving agent:", error);
     }
   };
 
   const handleAddSave = async () => {
     try {
-      await Axios.post("/api/executive/create", newExecutive);
-      fetchExecutives(); // Refresh the list
+      await Axios.post("/api/agent/create", newAgent);
+      fetchAgents(); // Refresh the list
       setAddModalOpen(false);
-      setNewExecutive({ name: "", email: "", password: "" }); // Reset form
+      setNewAgent({ name: "", email: "", password: "" }); // Reset form
     } catch (error) {
-      console.error("Error adding executive:", error);
+      console.error("Error adding agent:", error);
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await Axios.delete(`/api/executive/delete/${id}`);
-      fetchExecutives(); // Refresh the list
+      await Axios.delete(`/api/agent/delete/${id}`);
+      fetchAgents(); // Refresh the list
     } catch (error) {
-      console.error("Error deleting executive:", error);
+      console.error("Error deleting agent:", error);
     }
   };
 
   const handleResetPassword = async (id) => {
     try {
-      await Axios.put(`/api/executive/resetpassword/${id}`);
+      await Axios.put(`/api/agent/resetpassword/${id}`);
       alert("Password reset successfully!");
     } catch (error) {
       console.error("Error resetting password:", error);
@@ -166,13 +165,13 @@ const CustomerExecutives = () => {
       <div className="page-content">
         <div className="container-fluid">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2>All Customer Executives</h2>
+            <h2>All Agents</h2>
             <Button
               variant="contained"
               color="primary"
               onClick={() => setAddModalOpen(true)}
             >
-              Add Executive
+              Add Agent
             </Button>
           </div>
 
@@ -219,8 +218,8 @@ const CustomerExecutives = () => {
                 {currentUsers.length > 0 ? (
                   currentUsers.map((user) => (
                     <tr key={user._id}>
-                      <td>{user.executive.name}</td>
-                      <td>{user.executive.email}</td>
+                      <td>{user.agent.name}</td>
+                      <td>{user.agent.email}</td>
                       <td>
                         {new Date(user.createdAt).toLocaleDateString("en-IN", {
                           year: "numeric",
@@ -278,7 +277,7 @@ const CustomerExecutives = () => {
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center">
-                      No Customer Executive Found
+                      No Customer Agent Found
                     </td>
                   </tr>
                 )}
@@ -327,7 +326,7 @@ const CustomerExecutives = () => {
       {/* Edit Modal */}
       <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)}>
         <Box sx={modalStyle}>
-          <h2>Edit Executive</h2>
+          <h2>Edit Agent</h2>
           <TextField
             fullWidth
             label="Name"
@@ -369,22 +368,22 @@ const CustomerExecutives = () => {
       {/* Add Modal */}
       <Modal open={addModalOpen} onClose={() => setAddModalOpen(false)}>
         <Box sx={modalStyle}>
-          <h2>Add Executive</h2>
+          <h2>Add Agent</h2>
           <TextField
             fullWidth
             label="Name"
-            value={newExecutive.name}
+            value={newAgent.name}
             onChange={(e) =>
-              setNewExecutive((prev) => ({ ...prev, name: e.target.value }))
+              setNewAgent((prev) => ({ ...prev, name: e.target.value }))
             }
             margin="normal"
           />
           <TextField
             fullWidth
             label="Email"
-            value={newExecutive.email}
+            value={newAgent.email}
             onChange={(e) =>
-              setNewExecutive((prev) => ({ ...prev, email: e.target.value }))
+              setNewAgent((prev) => ({ ...prev, email: e.target.value }))
             }
             margin="normal"
           />
@@ -392,9 +391,9 @@ const CustomerExecutives = () => {
             fullWidth
             label="Password"
             type="password"
-            value={newExecutive.password}
+            value={newAgent.password}
             onChange={(e) =>
-              setNewExecutive((prev) => ({ ...prev, password: e.target.value }))
+              setNewAgent((prev) => ({ ...prev, password: e.target.value }))
             }
             margin="normal"
           />
@@ -421,4 +420,4 @@ const CustomerExecutives = () => {
   );
 };
 
-export default CustomerExecutives;
+export default Agents;

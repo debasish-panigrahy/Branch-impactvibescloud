@@ -9,52 +9,39 @@ import {
   CSidebarHeader,
   CSidebarToggler,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
 
 import { AppSidebarNav } from './AppSidebarNav'
-
-import logo from 'src/assets/logo.jpg'
-import { sygnet } from 'src/assets/brand/sygnet'
-
-// sidebar nav config
 import navigation from '../_nav'
 
-const AppSidebar = () => {
+function AppSidebar() {
   const dispatch = useDispatch()
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
 
   return (
     <CSidebar
-      className="border-end"
-      colorScheme="dark"
-      position="fixed"
+      className="sidebar sidebar-fixed bg-dark text-white"
       unfoldable={unfoldable}
       visible={sidebarShow}
       onVisibleChange={(visible) => {
         dispatch({ type: 'set', sidebarShow: visible })
       }}
     >
-      <CSidebarHeader className="border-bottom">
-        {/* <CSidebarBrand to="/"> */}
-        {/* <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} /> */}
-        <img
-          className="sidebar-brand-full"
-          src={''}
-          alt="Branch"
-          height={32}
-          style={{ marginLeft: '-0.8rem', textAlign: 'center', fontSize: '2rem' }}
-        />
-        <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
-        {/* </CSidebarBrand> */}
+      <CSidebarHeader className="sidebar-header d-flex align-items-center justify-content-center py-4">
+        <CSidebarBrand className="px-4 py-2 w-100" to="/">
+          <div className="sidebar-brand-full">
+            <span className="h3 mb-0 text-white fw-bold">Impact Vibes</span>
+          </div>
+        </CSidebarBrand>
         <CCloseButton
-          className="d-lg-none"
-          dark
+          className="d-md-none text-white"
           onClick={() => dispatch({ type: 'set', sidebarShow: false })}
         />
       </CSidebarHeader>
+
       <AppSidebarNav items={navigation} />
-      <CSidebarFooter className="border-top d-none d-lg-flex">
+
+      <CSidebarFooter className="d-none d-md-flex">
         <CSidebarToggler
           onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}
         />
@@ -63,4 +50,4 @@ const AppSidebar = () => {
   )
 }
 
-export default React.memo(AppSidebar)
+export default AppSidebar

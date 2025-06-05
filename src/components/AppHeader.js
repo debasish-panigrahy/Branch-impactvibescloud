@@ -1,148 +1,217 @@
-import React, { useEffect, useRef } from 'react'
-import { NavLink } from 'react-router-dom'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   CContainer,
-  CDropdown,
-  CDropdownItem,
-  CDropdownMenu,
-  CDropdownToggle,
   CHeader,
   CHeaderNav,
   CHeaderToggler,
-  CNavLink,
-  CNavItem,
-  useColorModes,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CButton,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import {
-  cilBell,
-  cilContrast,
-  cilEnvelopeOpen,
-  cilList,
-  cilMenu,
-  cilMoon,
-  cilSun,
-} from '@coreui/icons'
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart'
-
-import { AppBreadcrumb } from './index'
+import { cilMenu } from '@coreui/icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { 
+  faPhone, 
+  faMicrophone, 
+  faPhoneSlash 
+} from '@fortawesome/free-solid-svg-icons'
+import Swal from 'sweetalert2'
 import { AppHeaderDropdown } from './header/index'
-import { IconButton } from '@mui/material'
+import PhoneInput from 'react-phone-input-2'
+import 'react-phone-input-2/lib/style.css'
 
-const AppHeader = () => {
-  const headerRef = useRef()
-  const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
-
+function AppHeader() {
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  const headerRef = useRef(null)
+  
+  const [isDialerOpen, setIsDialerOpen] = useState(false)
+  const [isMicEnabled, setIsMicEnabled] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [isCallActive, setIsCallActive] = useState(false)
+  
+  const handleDialerClick = () => {
+    setIsDialerOpen(true)
+  }
+
+  const handleEnableMicrophone = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      setIsMicEnabled(true)
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Microphone Access Required',
+        text: 'Please allow microphone access to use the dialer',
+      })
+    }
+  }
+
+  const handleCall = () => {
+    if (!phoneNumber) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'No Number Entered',
+        text: 'Please enter a number to call',
+      })
+      return
+    }
+    
+    setIsCallActive(true)
+    // Here you would integrate with your calling system
+    Swal.fire({
+      icon: 'success',
+      title: 'Calling...',
+      text: `Initiating call to ${phoneNumber}`,
+      showConfirmButton: false,
+      allowOutsideClick: false
+    })
+  }
+
+  const handleEndCall = () => {
+    setIsCallActive(false)
+    Swal.close()
+  }
 
   useEffect(() => {
-    document.addEventListener('scroll', () => {
-      headerRef.current &&
-        headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
-    })
+    const handleScroll = () => {
+      if (headerRef.current) {
+        headerRef.current.classList.toggle('shadow-sm', window.scrollY > 0)
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   return (
-    <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
-      <CContainer className="border-bottom px-4" fluid>
+    <CHeader position="sticky" className="mb-4 bg-light border-bottom" ref={headerRef}>
+      <CContainer fluid className="px-4">
         <CHeaderToggler
+          className="ps-1"
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-          style={{ marginInlineStart: '-14px' }}
         >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
 
-        {/* <CHeaderNav className="d-none d-md-flex">
-          <CNavItem>
-            <CNavLink to="/dashboard" as={NavLink}>
-              Dashboard
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">Users</CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">Settings</CNavLink>
-          </CNavItem>
-        </CHeaderNav>
-        <CHeaderNav className="ms-auto">
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilBell} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilList} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilEnvelopeOpen} size="lg" />
-            </CNavLink>
-          </CNavItem>
-        </CHeaderNav> */}
+        <div className="d-flex align-items-center">
+          <span className="h3 mb-0 ms-3 text-dark">Impact Vibes</span>
+        </div>
 
-        <CHeaderNav>
-          {/* <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
-          <CDropdown variant="nav-item" placement="bottom-end">
-            <CDropdownToggle caret={false}>
-              {colorMode === 'dark' ? (
-                <CIcon icon={cilMoon} size="lg" />
-              ) : colorMode === 'auto' ? (
-                <CIcon icon={cilContrast} size="lg" />
-              ) : (
-                <CIcon icon={cilSun} size="lg" />
-              )}
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem
-                active={colorMode === 'light'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('light')}
-              >
-                <CIcon className="me-2" icon={cilSun} size="lg" /> Light
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'dark'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('dark')}
-              >
-                <CIcon className="me-2" icon={cilMoon} size="lg" /> Dark
-              </CDropdownItem>
-              <CDropdownItem
-                active={colorMode === 'auto'}
-                className="d-flex align-items-center"
-                as="button"
-                type="button"
-                onClick={() => setColorMode('auto')}
-              >
-                <CIcon className="me-2" icon={cilContrast} size="lg" /> Auto
-              </CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li> */}
-          <AppHeaderDropdown />
-
-          {/* <CNavLink to="/cart" as={NavLink}>
-            <IconButton>
-              <ShoppingCartIcon style={{ color: 'black' }} />
-            </IconButton>
-          </CNavLink> */}
-        </CHeaderNav>
-      </CContainer>
-      <CContainer className="px-4" fluid>
-        <AppBreadcrumb />
+        <div className="ms-auto d-flex align-items-center">
+          <div 
+            className="d-flex align-items-center me-4 px-3 py-2 bg-light rounded-2 hover:bg-primary-subtle cursor-pointer"
+            onClick={handleDialerClick}
+            role="button"
+          >
+            <FontAwesomeIcon
+              icon={faPhone}
+              className="text-primary me-2"
+              style={{ fontSize: '1.5rem' }}
+            />
+            <span className="text-dark fw-semibold fs-5">Dialer</span>
+          </div>
+          
+          {isDialerOpen && (
+            <CModal 
+              visible={isDialerOpen} 
+              onClose={() => !isCallActive && setIsDialerOpen(false)} 
+              size="md"
+              alignment="center"
+              className="dialer-modal"
+              backdrop={isCallActive ? 'static' : true}
+            >
+              <CModalHeader closeButton={!isCallActive} className="border-0 bg-transparent">
+                <CModalTitle className="text-center w-100">
+                  <FontAwesomeIcon icon={faPhone} className="text-primary me-2" />
+                  {isCallActive ? 'Ongoing Call' : 'Phone Dialer'}
+                </CModalTitle>
+              </CModalHeader>
+              <CModalBody>
+                <div className="text-center">
+                  {!isMicEnabled ? (
+                    <div className="text-center p-4">
+                      <FontAwesomeIcon 
+                        icon={faMicrophone} 
+                        className="text-primary mb-3"
+                        style={{ fontSize: '3rem' }}
+                      />
+                      <h4 className="mb-3">Microphone Access Required</h4>
+                      <p className="text-muted mb-4">To make and receive calls, we need access to your microphone</p>
+                      <CButton 
+                        color="primary" 
+                        size="lg"
+                        className="px-4 py-2"
+                        onClick={handleEnableMicrophone}
+                      >
+                        <FontAwesomeIcon icon={faMicrophone} className="me-2" />
+                        Enable Microphone
+                      </CButton>
+                    </div>
+                  ) : isCallActive ? (
+                    <div className="call-active-screen p-4">
+                      <div className="caller-info mb-4">
+                        <div className="caller-avatar mb-3">
+                          <FontAwesomeIcon 
+                            icon={faPhone} 
+                            className="text-white"
+                            style={{ fontSize: '2rem' }}
+                          />
+                        </div>
+                        <h4 className="mb-2">{phoneNumber}</h4>
+                        <p className="text-muted">Ongoing Call</p>
+                      </div>
+                      <CButton 
+                        color="danger" 
+                        size="lg" 
+                        className="rounded-circle p-3"
+                        onClick={handleEndCall}
+                      >
+                        <FontAwesomeIcon icon={faPhoneSlash} style={{ fontSize: '1.5rem' }} />
+                      </CButton>
+                    </div>
+                  ) : (
+                    <div className="dialer-content p-4">
+                      <div className="phone-input-container mb-4">
+                        <PhoneInput
+                          country={'us'}
+                          value={phoneNumber}
+                          onChange={phone => setPhoneNumber(phone)}
+                          enableSearch
+                          inputClass="form-control"
+                          containerClass="w-100"
+                          searchClass="country-search"
+                          dropdownClass="country-dropdown"
+                          buttonClass="country-button"
+                        />
+                      </div>
+                      <div className="action-buttons">
+                        <CButton 
+                          color="success"
+                          size="lg"
+                          className="call-button px-4 py-2 w-100"
+                          onClick={handleCall}
+                          disabled={!phoneNumber}
+                        >
+                          <FontAwesomeIcon icon={faPhone} className="me-2" />
+                          Call
+                        </CButton>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CModalBody>
+            </CModal>
+          )}
+          
+          <CHeaderNav>
+            <AppHeaderDropdown />
+          </CHeaderNav>
+        </div>
       </CContainer>
     </CHeader>
   )

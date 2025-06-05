@@ -21,7 +21,7 @@ const Dashboard = () => {
   return (
     <Box sx={{ flexGrow: 1, padding: 2 }}>
       <Typography textAlign="center" variant="h3" gutterBottom>
-        Welcome to Visit Wise.!
+        Welcome to Impact Vibes!
       </Typography>
     </Box>
   )
