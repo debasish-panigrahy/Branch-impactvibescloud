@@ -99,7 +99,7 @@ function AppHeader() {
         </CHeaderToggler>
 
         <div className="d-flex align-items-center">
-          <span className="h3 mb-0 ms-3 text-dark">Impact Vibes</span>
+          <span className="h3 mb-0 ms-3 text-dark">Agent</span>
         </div>
 
         <div className="ms-auto d-flex align-items-center">

@@ -4,8 +4,10 @@ import {
   cilSpeedometer,
   cilUser,
   cilPhone,
+  cilBullhorn,
+  cilList,
 } from '@coreui/icons'
-import {CNavItem} from '@coreui/react'
+import {CNavGroup, CNavItem} from '@coreui/react'
 
 const _nav = [
   {
@@ -26,6 +28,7 @@ const _nav = [
     to: '/call-logs',
     icon: <CIcon icon={cilPhone} customClassName="nav-icon" />,
   },
+  // Contact Lists component is hidden from sidebar but still accessible via URL
 ]
 
 export default _nav

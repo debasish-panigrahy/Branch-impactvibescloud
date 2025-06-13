@@ -1,0 +1,262 @@
+/* ContactListsWebpage.css */
+
+/* Card and Header */
+.contact-list-card {
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.contact-list-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 1rem 1.5rem;
+}
+
+.page-title {
+  font-size: 1.5rem; /* Matches image: "Contact Lists" title */
+  font-weight: 600;
+  color: #333;
+}
+
+.search-bar-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-grow: 1;
+  max-width: 350px; /* Adjust as needed */
+}
+
+.search-icon-header {
+  position: absolute;
+  left: 10px;
+  color: #aaa;
+}
+
+.search-input-header {
+  padding-left: 30px !important; /* Ensure padding for icon */
+  border-radius: 0.25rem;
+  border: 1px solid #ced4da;
+  height: calc(1.5em + 0.75rem + 2px); /* Standard CoreUI input height */
+}
+
+.search-input-header:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.status-filter-header {
+  width: auto;
+  min-width: 120px; /* Adjust as needed */
+  font-size: 0.875rem;
+}
+
+.clear-filters-button {
+  color: #007bff; /* Blue color for clear filters */
+  font-weight: 500;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.clear-filters-button:hover {
+  text-decoration: underline;
+  background-color: transparent !important;
+}
+
+.new-list-button {
+  font-weight: 500;
+}
+
+/* Card Body and Table */
+.contact-list-card-body {
+  padding: 1.5rem;
+}
+
+.contact-list-table th {
+  font-weight: 600;
+  font-size: 0.8rem; /* Slightly smaller header text */
+  color: #6c757d;
+  text-transform: uppercase;
+  border-bottom-width: 1px;
+  border-top: none; /* Remove default top border on th */
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.contact-list-table td {
+  vertical-align: middle;
+  font-size: 0.875rem;
+  padding-top: 0.85rem; /* Adjust for vertical alignment and spacing */
+  padding-bottom: 0.85rem;
+}
+
+.contact-list-table .form-check {
+    min-height: auto; /* Adjust checkbox height */
+    padding-left: 1.75rem; /* Ensure label doesn't overlap checkbox */
+}
+
+.contact-list-table .form-check-input {
+    margin-top: 0.1rem; /* Align checkbox better */
+}
+
+/* Status Badge - CoreUI handles shape="rounded-pill" */
+
+/* Actions Column */
+.action-cell {
+  text-align: center;
+}
+
+.action-link {
+  cursor: pointer;
+  font-weight: 500;
+  margin: 0 0.3rem;
+  font-size: 0.875rem;
+  text-decoration: none; /* Remove underline by default */
+}
+
+.action-edit {
+  color: #007bff; /* Blue for Edit */
+}
+
+.action-edit:hover {
+  text-decoration: underline;
+  color: #0056b3; /* Darker blue on hover */
+}
+
+.action-delete {
+  color: #dc3545; /* Red for Delete */
+}
+
+.action-delete:hover {
+  text-decoration: underline;
+  color: #c82333; /* Darker red on hover */
+}
+
+.action-separator {
+  color: #adb5bd; /* Light grey for separator */
+  margin: 0 0.1rem;
+}
+
+/* No Data States */
+.no-data-initial-state, .no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-data-initial-state .h5, .no-data-container .h5 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.no-data-initial-state p.text-medium-emphasis, .no-data-container p.text-medium-emphasis {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Table Footer Controls */
+.table-footer-controls {
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.875rem;
+  color: #495057;
+}
+
+.rows-per-page-select .form-select-sm {
+    width: auto !important; /* Override CoreUI width */
+    padding-right: 1.75rem; /* Ensure space for dropdown arrow */
+}
+
+.pagination-controls span {
+  margin-right: 0.75rem;
+}
+
+.pagination-button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Ensure table row hover effect if not default */
+.contact-list-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Import Contacts Dropzone and Upload Section */
+.import-contacts-dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 32px 16px;
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.import-contacts-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.import-contacts-upload-link {
+  color: #4f46e5;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 1rem;
+}
+
+.import-contacts-upload-desc {
+  color: #6c757d;
+  font-size: 0.95rem;
+  margin-top: 2px;
+}
+
+.import-contacts-upload-hint {
+  color: #adb5bd;
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+/* Responsive adjustments for header */
+@media (max-width: 991.98px) { /* Adjust breakpoint as needed, e.g., md or lg */
+  .contact-list-header .row > .d-flex.align-items-center {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  .contact-list-header .row > .d-flex.justify-content-md-end {
+    margin-top: 1rem;
+    justify-content: flex-start !important;
+  }
+  .search-bar-container {
+    width: 100%;
+    max-width: none;
+    margin-top: 0.5rem;
+  }
+  .status-filter-header, .clear-filters-button, .new-list-button {
+    margin-top: 0.5rem;
+  }
+  .status-filter-header {
+    margin-right: 0 !important; /* Remove right margin on smaller screens */
+    margin-bottom: 0.5rem; /* Add bottom margin if they stack */
+  }
+}
+
+@media (max-width: 767.98px) {
+    .page-title {
+        margin-bottom: 0.5rem;
+    }
+    .contact-list-header .row .d-flex.justify-content-md-end > * {
+        margin-right: 0.5rem !important;
+    }
+    .contact-list-header .row .d-flex.justify-content-md-end > *:last-child {
+        margin-right: 0 !important;
+    }
+}
