@@ -1,0 +1,130 @@
+.dialer-pad {
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--cui-body-bg);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+  .number-display {
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cui-input-bg);
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    font-family: var(--cui-font-monospace);
+    letter-spacing: 0.1em;
+    
+    h3 {
+      font-size: 2rem;
+      margin: 0;
+      color: var(--cui-body-color);
+    }
+  }
+
+  .dial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .dial-button {
+    aspect-ratio: 1;
+    font-size: 1.75rem;
+    font-weight: 500;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    border: none;
+    background: var(--cui-tertiary-bg);
+    color: var(--cui-body-color);
+
+    &:hover {
+      background: var(--cui-primary);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+
+    .btn {
+      padding: 1rem;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+  }
+}
+
+.sidebar {
+  .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    &.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-icon {
+      color: rgba(255, 255, 255, 0.6);
+    }
+  }
+
+  .nav-group {
+    &.show {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-group-items {
+      .nav-link {
+        padding-left: 1rem;
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+      }
+    }
+  }
+
+  .nav-group-toggle {
+    color: rgba(255, 255, 255, 0.8);
+    
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-group-indicator {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+  }
+}
