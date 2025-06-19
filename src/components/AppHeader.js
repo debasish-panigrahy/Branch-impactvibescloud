@@ -21,6 +21,8 @@ import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import JsSIP from 'jssip'
 
+JsSIP.debug.disable('JsSIP:*'); // Disable all JsSIP debugging
+
 function AppHeader() {
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.changeState.sidebarShow) // ✅ updated
@@ -95,7 +97,12 @@ function AppHeader() {
         password: sipPassword,
         session_timers: false,
         register_expires: 30,
-        user_agent: 'My SIP Client',
+        connection_recovery_min_interval: 2,
+        connection_recovery_max_interval: 30,
+        log: { // Add logging configuration
+          builtinEnabled: false,
+          level: 'error' // Only show errors
+        }
       }
       uaRef.current = new JsSIP.UA(configuration)
       uaRef.current.start()
@@ -235,7 +242,12 @@ function AppHeader() {
         password: sipPassword,
         session_timers: false,
         register_expires: 30,
-        user_agent: 'My SIP Client',
+        connection_recovery_min_interval: 2,
+        connection_recovery_max_interval: 30,
+        log: { // Add logging configuration
+          builtinEnabled: false,
+          level: 'error' // Only show errors
+        }
       }
       uaRef.current = new JsSIP.UA(configuration)
       uaRef.current.start()
