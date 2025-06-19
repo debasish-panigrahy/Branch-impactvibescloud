@@ -11,6 +11,8 @@ import JsSIP from 'jssip'
 const MyProfile = () => {
   const [loading, setLoading] = useState(false)
   const [imagesPreview, setImagesPreview] = useState()
+  const [didNumbers, setDidNumbers] = useState([])
+
   const token = isAutheticated()
   const navigate = useNavigate()
 
@@ -18,6 +20,7 @@ const MyProfile = () => {
     name: '',
     email: '',
     phone: '',
+    branchId: '',
   })
 
   const [sipUsername, setSipUsername] = useState('')
@@ -28,15 +31,6 @@ const MyProfile = () => {
 
   useEffect(() => {
     getData()
-
-    // Load SIP details from localStorage if present
-    const sipDetails = localStorage.getItem('sipDetails')
-    if (sipDetails) {
-      const { sipUsername, sipPassword, sipServer } = JSON.parse(sipDetails)
-      setSipUsername(sipUsername || '')
-      setSipPassword(sipPassword || '')
-      setSipServer(sipServer || '')
-    }
   }, [])
 
   const getData = async () => {
@@ -49,13 +43,42 @@ const MyProfile = () => {
           name: res.data.user.name || '',
           email: res.data.user.email || '',
           phone: res.data.user.phone || '',
+          branchId: res.data.user.branchId || '',
         })
         if (res.data.user.avatar?.url) {
           setImagesPreview(res.data.user.avatar.url)
         }
+        if (res.data.user.branchId) {
+          fetchDidNumbers(res.data.user.branchId)
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err.response?.data || err.message)
+    }
+  }
+
+  const fetchDidNumbers = async (branchId) => {
+    try {
+      const res = await Axios.get(`/api/branch/get_one/${branchId}`)
+      console.log('Branch API Response:', res.data)
+
+      if (res.data.success && res.data.data) {
+        const branchData = res.data.data
+        if (branchData.didNumber) {
+          console.log('Found DID number:', branchData.didNumber)
+          setDidNumbers([branchData.didNumber])
+        } else {
+          console.warn('No DID number found in branch data')
+          setDidNumbers([])
+        }
+      } else {
+        console.warn('Invalid API response format:', res.data)
+        setDidNumbers([])
+      }
+    } catch (err) {
+      console.error('Error fetching DID numbers:', err)
+      setDidNumbers([])
+      Swal.fire('Error', 'Failed to fetch DID number', 'error')
     }
   }
 
@@ -98,53 +121,48 @@ const MyProfile = () => {
   }
 
   const handleSipRegister = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     try {
-      const socket = new JsSIP.WebSocketInterface(`ws://${sipServer}`)
+      // Split server and port
+      const [serverIP, port] = sipServer.split(':');
+      
+      // Create WebSocket connection
+      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`);
+      
       const configuration = {
         sockets: [socket],
-        uri: `sip:${sipUsername}@${sipServer}`,
+        // Don't include port in SIP URI domain
+        uri: `sip:${sipUsername}@${serverIP}`,
         password: sipPassword,
-        session_timers: false,
+        register: true,
         register_expires: 30,
+        realm: serverIP,
         user_agent: 'My SIP Client',
-      }
+        log: {
+          builtinEnabled: false,
+          level: 'error'
+        }
+      };
 
-      const ua = new JsSIP.UA(configuration)
-      uaRef.current = ua
+      const ua = new JsSIP.UA(configuration);
 
-      socket.onconnect = () => {
-        console.log('WebSocket connected')
-      }
-
-      socket.ondisconnect = () => {
-        console.log('WebSocket disconnected')
-      }
-
+      // Add event handlers
       ua.on('registered', () => {
-        // Store SIP details in localStorage
-        localStorage.setItem('sipDetails', JSON.stringify({
-          sipUsername,
-          sipPassword,
-          sipServer,
-        }))
-        Swal.fire('Success', 'SIP registration successful and details saved!', 'success')
-      })
+        console.log('Successfully registered');
+        Swal.fire('Success', 'SIP Registration successful', 'success');
+      });
 
-      ua.on('unregistered', () => {
-        console.log('SIP unregistered')
-      })
+      ua.on('registrationFailed', (response) => {
+        console.error('Registration failed:', response);
+        Swal.fire('Error', `Registration failed: ${response.cause}`, 'error');
+      });
 
-      ua.on('registrationFailed', (error) => {
-        console.error('Registration failed:', error)
-        Swal.fire('Failed', `Registration failed: ${error.cause}`, 'error')
-      })
+      ua.start();
 
-      ua.start()
     } catch (err) {
-      console.error('SIP initialization error:', err)
-      Swal.fire('Error', 'SIP initialization failed', 'error')
+      console.error('SIP initialization error:', err);
+      Swal.fire('Error', err.message, 'error');
     }
   }
 
@@ -196,7 +214,12 @@ const MyProfile = () => {
                   </Form.Group>
                   <Form.Group id="sipUsername" className="mb-4">
                     <Form.Label>SIP Username</Form.Label>
-                    <Form.Control type="text" placeholder="Enter SIP Username" value={sipUsername} onChange={(e) => setSipUsername(e.target.value)} />
+                    <Form.Select value={sipUsername} onChange={e => setSipUsername(e.target.value)}>
+                      <option disabled value="">Select DID Number</option>
+                      {didNumbers.map(did => (
+                        <option key={did} value={did}>{did}</option>
+                      ))}
+                    </Form.Select>
                   </Form.Group>
                   <Form.Group id="sipPassword" className="mb-4">
                     <Form.Label>SIP Password</Form.Label>

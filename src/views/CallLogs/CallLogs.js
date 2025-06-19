@@ -27,6 +27,8 @@ function CallLogs() {
   const [callLogs, setCallLogs] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [businessId, setBusinessId] = useState('')
+  const [agentId, setAgentId] = useState('')
+
   const [searchText, setSearchText] = useState('')
   const [debouncedSearchText, setDebouncedSearchText] = useState(searchText)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -40,14 +42,16 @@ function CallLogs() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
   const [selectedCallLog, setSelectedCallLog] = useState(null)
-  
+
   const token = isAutheticated()
   const fetchBusinessId = useCallback(async () => {
     try {
       // No need to explicitly set Authorization header as it's handled by axios interceptor
       const res = await Axios.get('/api/v1/user/details')
       if (res.data.success) {
-        setBusinessId(res.data.user.branchId)
+        console.log("user id ===== ", res.data.user._id);
+        
+        setBusinessId(res.data.user._id)
       }
     } catch (error) {
       console.error('Failed to fetch business ID:', error)
@@ -56,15 +60,15 @@ function CallLogs() {
   }, [])
   const fetchCallLogs = useCallback(async () => {
     if (!businessId) return
-    
+
     setIsLoading(true)
     try {
       const params = {
-        businessId,
+        agent:businessId,
         page: currentPage,
         limit: rowsPerPage,
       }
-      
+
       if (debouncedSearchText) params.search = debouncedSearchText
       if (callTypeFilter) params.callType = callTypeFilter
       if (teamFilter) params.team = teamFilter
@@ -73,7 +77,7 @@ function CallLogs() {
 
       // No need to explicitly set Authorization header as it's handled by axios interceptor
       const response = await Axios.get('/api/call-logs', { params })
-      
+
       if (response.data.success) {
         setCallLogs(response.data.data || [])
         setTotalRecords(response.data.pagination?.totalRecords || 0)
@@ -107,10 +111,10 @@ function CallLogs() {
     const timer = setTimeout(() => {
       setDebouncedSearchText(searchText)
     }, 500)
-    
+
     return () => clearTimeout(timer)
   }, [searchText])
-  
+
   useEffect(() => {
     setCurrentPage(1)
     fetchCallLogs()
@@ -160,7 +164,7 @@ function CallLogs() {
     setSelectedDate('')
     setCurrentPage(1)
   }  // No test data loading functions in production
-  
+
   const downloadExcel = () => {
     if (callLogs.length === 0) {
       alert('No data available to download')
@@ -210,12 +214,12 @@ function CallLogs() {
 
   const handleApiResponse = (response) => {
     const { messageType, message } = response
-    
+
     if (!messageType || !message) {
       showInfoToast('Operation completed')
       return
     }
-    
+
     switch (messageType) {
       case 'success':
         showSuccessToast(message)
@@ -236,15 +240,15 @@ function CallLogs() {
 
   const handleApiError = (error) => {
     console.error('API Error:', error)
-    
+
     if (!navigator.onLine) {
       showErrorToast('Network connection lost. Please check your internet connection.')
       return
     }
-    
+
     if (error.response) {
       const status = error.response.status
-      
+
       if (status === 401 || status === 403) {
         showErrorToast('Authentication error. Please login again.')
       } else if (status === 404) {
@@ -280,11 +284,11 @@ function CallLogs() {
   const handleOpenCreateModal = () => {
     setShowCreateModal(true)
   }
-  
+
   const handleCloseCreateModal = () => {
     setShowCreateModal(false)
   }
-  
+
   const handleCallLogCreated = () => {
     fetchCallLogs()
   }
@@ -293,7 +297,7 @@ function CallLogs() {
     setSelectedCallLog(log)
     setShowDetailsModal(true)
   }
-  
+
   const handleCloseDetailsModal = () => {
     setShowDetailsModal(false)
   }
@@ -348,7 +352,7 @@ function CallLogs() {
             </CRow>
             <CRow className="mt-3 align-items-center">
               <CCol xs={12} md={10}>
-                <div className="search-bar" style={{maxWidth: '400px'}}>
+                <div className="search-bar" style={{ maxWidth: '400px' }}>
                   <FontAwesomeIcon icon={faSearch} className="search-icon" />
                   <CFormInput
                     type="search"
@@ -358,11 +362,11 @@ function CallLogs() {
                   />
                 </div>
               </CCol>              <CCol xs={12} md={2} className="d-flex justify-content-end mt-3 mt-md-0">                <CButton color="light" variant="outline" onClick={downloadExcel} className="me-2">
-                  <FontAwesomeIcon icon={faDownload} />
-                </CButton>
-                <CButton color="primary" onClick={handleOpenCreateModal}>
+                <FontAwesomeIcon icon={faDownload} />
+              </CButton>
+                {/* <CButton color="primary" onClick={handleOpenCreateModal}>
                   <FontAwesomeIcon icon={faPlus} className="me-1" /> Log Call
-                </CButton>
+                </CButton> */}
               </CCol>
             </CRow>
           </CCardHeader>
@@ -401,8 +405,8 @@ function CallLogs() {
                       </CTableRow>
                     ) : (
                       currentLogs.map((log, index) => (
-                        <CTableRow 
-                          key={index} 
+                        <CTableRow
+                          key={index}
                           onClick={() => handleViewDetails(log)}
                           style={{ cursor: 'pointer' }}
                           className="hover-highlight"
@@ -456,9 +460,9 @@ function CallLogs() {
           </CCardBody>
         </CCard>
       </CCol>
-      <CreateCallLog 
-        isOpen={showCreateModal} 
-        onClose={handleCloseCreateModal} 
+      <CreateCallLog
+        isOpen={showCreateModal}
+        onClose={handleCloseCreateModal}
         onSuccess={handleCallLogCreated}
         businessId={businessId}
       />
