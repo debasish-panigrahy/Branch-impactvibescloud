@@ -2,8 +2,8 @@ import axios from 'axios'
 import { isAutheticated } from './auth'
 
 const Axios = axios.create({
-  baseURL: 'http://localhost:5040',
-  // baseURL: 'https://api-impactvibescloud.onrender.com',
+  // baseURL: 'http://localhost:5040',
+  baseURL: 'https://api-impactvibescloud.onrender.com',
 })
 
 // Add request interceptor to automatically attach auth token
