@@ -20,8 +20,36 @@ import { AppHeaderDropdown } from './header/index'
 import PhoneInput from 'react-phone-input-2'
 import 'react-phone-input-2/lib/style.css'
 import JsSIP from 'jssip'
+import { isAutheticated } from '../auth' // <-- Add this import at the top
 
-JsSIP.debug.disable('JsSIP:*'); // Disable all JsSIP debugging
+JsSIP.debug.enable('JsSIP:*'); // Disable all JsSIP debugging
+
+// Utility function to fetch extension using the correct token
+async function fetchExtensionByDid(didNumber) {
+  try {
+    const tokenObj = isAutheticated();
+    // const jwt = tokenObj && tokenObj.token ? tokenObj.token : '';
+    const jwt = localStorage.getItem('authToken') || '';
+
+    const response = await fetch(
+      `https://api-impactvibescloud.onrender.com/api/did-extensions/number/${didNumber}`,
+      {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+          Accept: "application/json",
+        },
+      }
+    );
+    const data = await response.json();
+    if (data.success && data.data && data.data.extension) {
+      return data.data.extension;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error fetching extension for DID:', err);
+    return null;
+  }
+}
 
 function AppHeader() {
   const dispatch = useDispatch()
@@ -48,7 +76,7 @@ function AppHeader() {
   const uaRef = useRef(null)
   const sessionRef = useRef(null)
   const remoteAudioRef = useRef(null)
-  const ringtoneRef = useRef({ pause: () => {}, currentTime: 0 }) // Dummy for now
+  const ringtoneRef = useRef({ pause: () => { }, currentTime: 0 }) // Dummy for now
 
   const handleDialerClick = () => {
     if (!isMicEnabled) {
@@ -73,9 +101,16 @@ function AppHeader() {
   }
 
   // --- Call logic ---
-  const handleCall = (calleeNumber) => {
-    const sipDetails = JSON.parse(localStorage.getItem('sipDetails') || '{}')
-    const { sipUsername, sipPassword, sipServer } = sipDetails
+  const handleCall = async (calleeNumber) => {
+    // Fetch extension for the DID before making the call
+    const extension = await fetchExtensionByDid(calleeNumber);
+    if (!extension) {
+      Swal.fire('Error', 'Could not find extension for this DID', 'error');
+      return;
+    }
+
+    const sipDetails = JSON.parse(localStorage.getItem('sipDetails') || '{}');
+    const { sipUsername, sipPassword, sipServer } = sipDetails;
 
     if (!sipUsername || !sipPassword || !sipServer) {
       Swal.fire('Error', 'SIP credentials not found. Please register SIP in your profile.', 'error')
@@ -137,7 +172,7 @@ function AppHeader() {
             pc.ontrack = (event) => {
               if (remoteAudioRef.current) {
                 remoteAudioRef.current.srcObject = event.streams[0]
-                remoteAudioRef.current.play().catch(err => 
+                remoteAudioRef.current.play().catch(err =>
                   console.error("Error playing remote audio:", err)
                 )
               }
@@ -151,7 +186,7 @@ function AppHeader() {
         }
       }
 
-      const newSession = uaRef.current.call(`sip:${calleeNumber}@${sipServer}`, options)
+      const newSession = uaRef.current.call(`sip:${extension}@${sipServer}`, options)
       setSession(newSession)
       sessionRef.current = newSession
     } catch (error) {
@@ -332,7 +367,7 @@ function AppHeader() {
       pc.ontrack = (event) => {
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
-          remoteAudioRef.current.play().catch(err => 
+          remoteAudioRef.current.play().catch(err =>
             console.error("Error playing remote audio:", err)
           );
         }
@@ -375,7 +410,7 @@ function AppHeader() {
         </div>
 
         <div className="ms-auto d-flex align-items-center">
-          <div 
+          <div
             className="d-flex align-items-center me-4 px-3 py-2 bg-light rounded-2 hover:bg-primary-subtle cursor-pointer"
             onClick={handleDialerClick}
             role="button"
@@ -387,12 +422,12 @@ function AppHeader() {
             />
             <span className="text-dark fw-semibold fs-5">Dialer</span>
           </div>
-          
+
           {/* Microphone Access Modal */}
           {!isMicEnabled && (
             <CModal
               visible={!isMicEnabled}
-              onClose={() => {}}
+              onClose={() => { }}
               size="sm"
               alignment="center"
               className="dialer-modal"
@@ -406,15 +441,15 @@ function AppHeader() {
               </CModalHeader>
               <CModalBody>
                 <div className="text-center p-4">
-                  <FontAwesomeIcon 
-                    icon={faMicrophone} 
+                  <FontAwesomeIcon
+                    icon={faMicrophone}
                     className="text-primary mb-3"
                     style={{ fontSize: '3rem' }}
                   />
                   <h4 className="mb-3">Microphone Access Required</h4>
                   <p className="text-muted mb-4">To make and receive calls, we need access to your microphone</p>
-                  <CButton 
-                    color="primary" 
+                  <CButton
+                    color="primary"
                     size="lg"
                     className="px-4 py-2"
                     onClick={handleEnableMicrophone}
@@ -429,9 +464,9 @@ function AppHeader() {
 
           {/* Dialer/Call Modal */}
           {isDialerOpen && isMicEnabled && (
-            <CModal 
-              visible={isDialerOpen} 
-              onClose={() => !isCallActive && setIsDialerOpen(false)} 
+            <CModal
+              visible={isDialerOpen}
+              onClose={() => !isCallActive && setIsDialerOpen(false)}
               size="sm"
               alignment="center"
               className="dialer-modal"
@@ -447,15 +482,15 @@ function AppHeader() {
                 <div className="text-center">
                   {!isMicEnabled ? (
                     <div className="text-center p-4">
-                      <FontAwesomeIcon 
-                        icon={faMicrophone} 
+                      <FontAwesomeIcon
+                        icon={faMicrophone}
                         className="text-primary mb-3"
                         style={{ fontSize: '3rem' }}
                       />
                       <h4 className="mb-3">Microphone Access Required</h4>
                       <p className="text-muted mb-4">To make and receive calls, we need access to your microphone</p>
-                      <CButton 
-                        color="primary" 
+                      <CButton
+                        color="primary"
                         size="lg"
                         className="px-4 py-2"
                         onClick={handleEnableMicrophone}
@@ -468,8 +503,8 @@ function AppHeader() {
                     <div className="call-active-screen p-4">
                       <div className="caller-info mb-4">
                         <div className="caller-avatar mb-3">
-                          <FontAwesomeIcon 
-                            icon={faPhone} 
+                          <FontAwesomeIcon
+                            icon={faPhone}
                             className="text-white"
                             style={{ fontSize: '2rem' }}
                           />
@@ -490,7 +525,7 @@ function AppHeader() {
                           {/* Dial Pad */}
                           <div className="dial-pad mb-3 d-flex justify-content-center">
                             <div className="d-flex flex-wrap justify-content-center mx-auto" style={{ maxWidth: 220 }}>
-                              {[1,2,3,4,5,6,7,8,9,'*',0,'#'].map((num, idx) => (
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((num, idx) => (
                                 <button
                                   key={idx}
                                   type="button"
@@ -505,7 +540,7 @@ function AppHeader() {
                           </div>
                           {/* Controls */}
                           <div className="d-flex justify-content-center gap-2 mb-2">
-                            <CButton 
+                            <CButton
                               color={isMuted ? "secondary" : "light"}
                               className="rounded-circle"
                               onClick={toggleMute}
@@ -513,7 +548,7 @@ function AppHeader() {
                             >
                               <FontAwesomeIcon icon={faMicrophone} style={{ opacity: isMuted ? 0.4 : 1 }} />
                             </CButton>
-                            <CButton 
+                            <CButton
                               color="light"
                               className="rounded-circle"
                               title="Speaker (not supported in browser)"
@@ -521,7 +556,7 @@ function AppHeader() {
                             >
                               <FontAwesomeIcon icon={faPhone} />
                             </CButton>
-                            <CButton 
+                            <CButton
                               color="danger"
                               className="rounded-circle"
                               onClick={handleEndCall}
@@ -535,9 +570,9 @@ function AppHeader() {
                       {/* Show only hangup if outgoing and not yet connected */}
                       {callDirection === 'outgoing' && callStatus !== "Connected" && (
                         <div className="d-flex justify-content-center">
-                          <CButton 
-                            color="danger" 
-                            size="lg" 
+                          <CButton
+                            color="danger"
+                            size="lg"
                             className="rounded-circle p-3"
                             onClick={handleEndCall}
                           >
@@ -560,7 +595,7 @@ function AppHeader() {
                         {/* Dial Pad */}
                         <div className="dial-pad mt-3 d-flex justify-content-center">
                           <div className="d-flex flex-wrap justify-content-center mx-auto" style={{ maxWidth: 220 }}>
-                            {[1,2,3,4,5,6,7,8,9,'*',0,'#'].map((num, idx) => (
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '*', 0, '#'].map((num, idx) => (
                               <button
                                 key={idx}
                                 type="button"
@@ -583,7 +618,7 @@ function AppHeader() {
                         </div>
                       </div>
                       <div className="action-buttons">
-                        <CButton 
+                        <CButton
                           color="success"
                           size="lg"
                           className="call-button px-4 py-2 w-100"
@@ -600,7 +635,7 @@ function AppHeader() {
               </CModalBody>
             </CModal>
           )}
-          
+
           {isIncomingModalOpen && (
             <CModal
               visible={isIncomingModalOpen}
@@ -618,8 +653,8 @@ function AppHeader() {
               </CModalHeader>
               <CModalBody>
                 <div className="text-center p-4">
-                  <FontAwesomeIcon 
-                    icon={faPhone} 
+                  <FontAwesomeIcon
+                    icon={faPhone}
                     className="text-success mb-3"
                     style={{ fontSize: '3rem' }}
                   />
@@ -638,7 +673,7 @@ function AppHeader() {
               </CModalBody>
             </CModal>
           )}
-          
+
           <CHeaderNav>
             <AppHeaderDropdown />
           </CHeaderNav>
