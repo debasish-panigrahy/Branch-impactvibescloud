@@ -51,6 +51,87 @@ async function fetchExtensionByDid(didNumber) {
   }
 }
 
+// const logCall = async (callerId, receiverId, callDuration, callType, status) => {
+//   try {
+//     const token = localStorage.getItem('authToken') || '';
+//     const timestamp = new Date().toISOString();
+
+//     const response = await fetch('https://api-impactvibescloud.onrender.com/api/call-logs/create', {
+//       method: 'POST',
+//       headers: {
+//         'accept': 'application/json',
+//         'authorization': `Bearer ${token}`,
+//         'content-type': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         agent,
+//         callerId,
+//         receiverId,
+//         callDuration,
+//         callType,
+//         timestamp,
+//         status, // Add status to indicate success or failure
+//       }),
+//     });
+
+//     if (!response.ok) {
+//       console.error('Failed to log call:', await response.text());
+//     }
+//   } catch (error) {
+//     console.error('Error logging call:', error);
+//   }
+// };
+
+
+const logCall = async (contact, receiverId, callDuration, callType, status) => {
+  try {
+    const token = localStorage.getItem('authToken') || '';
+    if (!token) {
+      console.error('Auth token not found.');
+      return;
+    }
+
+    // Decode JWT token and extract user id
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    const payload = JSON.parse(jsonPayload);
+    const agentId = payload.id; // Assuming 'id' is the field inside the JWT payload
+
+    const timestamp = new Date().toISOString();
+
+    const response = await fetch('https://api-impactvibescloud.onrender.com/api/call-logs/create', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'authorization': `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        contact,
+        receiverId,
+        callDuration,
+        callType,
+        timestamp,
+        status,
+        agent: agentId, // Store user ID from token
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to log call:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error logging call:', error);
+  }
+};
+
+
 function AppHeader() {
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.changeState.sidebarShow) // ✅ updated
@@ -102,10 +183,10 @@ function AppHeader() {
 
   // --- Call logic ---
   const handleCall = async (calleeNumber) => {
-    // Fetch extension for the DID before making the call
     const extension = await fetchExtensionByDid(calleeNumber);
     if (!extension) {
       Swal.fire('Error', 'Could not find extension for this DID', 'error');
+      logCall(calleeNumber, calleeNumber, 0, 'outgoing', 'failed'); // Log failed call
       return;
     }
 
@@ -113,19 +194,18 @@ function AppHeader() {
     const { sipUsername, sipPassword, sipServer } = sipDetails;
 
     if (!sipUsername || !sipPassword || !sipServer) {
-      Swal.fire('Error', 'SIP credentials not found. Please register SIP in your profile.', 'error')
-      return
+      Swal.fire('Error', 'SIP credentials not found. Please register SIP in your profile.', 'error');
+      logCall(calleeNumber, calleeNumber, 0, 'outgoing', 'failed'); // Log failed call
+      return;
     }
 
-    // Show modal and status immediately
-    setCallDirection('outgoing')
-    setCallStatus("Calling...")
-    setIsCallActive(true)
-    setIsDialerOpen(true)
+    setCallDirection('outgoing');
+    setCallStatus("Calling...");
+    setIsCallActive(true);
+    setIsDialerOpen(true);
 
-    // Create JsSIP UA if not already created
     if (!uaRef.current) {
-      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`)
+      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`);
       const configuration = {
         sockets: [socket],
         uri: `sip:${sipUsername}@${sipServer}`,
@@ -134,13 +214,9 @@ function AppHeader() {
         register_expires: 30,
         connection_recovery_min_interval: 2,
         connection_recovery_max_interval: 30,
-        log: { // Add logging configuration
-          builtinEnabled: false,
-          level: 'error' // Only show errors
-        }
-      }
-      uaRef.current = new JsSIP.UA(configuration)
-      uaRef.current.start()
+      };
+      uaRef.current = new JsSIP.UA(configuration);
+      uaRef.current.start();
     }
 
     try {
@@ -148,53 +224,44 @@ function AppHeader() {
         mediaConstraints: { audio: true, video: false },
         rtcOfferConstraints: {
           offerToReceiveAudio: true,
-          offerToReceiveVideo: false
+          offerToReceiveVideo: false,
         },
         eventHandlers: {
           progress: () => setCallStatus("Ringing..."),
           confirmed: () => setCallStatus("Connected"),
           ended: () => {
-            setCallStatus("Call Ended")
-            setIsCallActive(false)
-            setCallDirection(null)
-            sessionRef.current = null
-            setSession(null)
+            const duration = callTimer; // Use the timer to log call duration
+            logCall(calleeNumber, calleeNumber, duration, 'outgoing', 'success'); // Log successful call
+            setCallStatus("Call Ended");
+            setIsCallActive(false);
+            setCallDirection(null);
+            sessionRef.current = null;
+            setSession(null);
           },
           failed: (e) => {
-            setCallStatus("Call Failed: " + e.cause)
-            setIsCallActive(false)
-            setCallDirection(null)
-            sessionRef.current = null
-            setSession(null)
+            logCall(calleeNumber, calleeNumber, 0, 'outgoing', 'failed'); // Log failed call
+            setCallStatus("Call Failed: " + e.cause);
+            setIsCallActive(false);
+            setCallDirection(null);
+            sessionRef.current = null;
+            setSession(null);
           },
-          peerconnection: (e) => {
-            const pc = e.peerconnection
-            pc.ontrack = (event) => {
-              if (remoteAudioRef.current) {
-                remoteAudioRef.current.srcObject = event.streams[0]
-                remoteAudioRef.current.play().catch(err =>
-                  console.error("Error playing remote audio:", err)
-                )
-              }
-            }
-          }
         },
         pcConfig: {
-          iceServers: [
-            { urls: ['stun:stun.l.google.com:19302'] }
-          ]
-        }
-      }
+          iceServers: [{ urls: ['stun:stun.l.google.com:19302'] }],
+        },
+      };
 
-      const newSession = uaRef.current.call(`sip:${extension}@${sipServer}`, options)
-      setSession(newSession)
-      sessionRef.current = newSession
+      const newSession = uaRef.current.call(`sip:${extension}@${sipServer}`, options);
+      setSession(newSession);
+      sessionRef.current = newSession;
     } catch (error) {
-      setCallStatus("Failed")
-      setIsCallActive(false)
-      setCallDirection(null)
+      logCall(calleeNumber, calleeNumber, 0, 'outgoing', 'failed'); // Log failed call
+      setCallStatus("Failed");
+      setIsCallActive(false);
+      setCallDirection(null);
     }
-  }
+  };
 
   const toggleMute = () => {
     if (sessionRef.current) {
