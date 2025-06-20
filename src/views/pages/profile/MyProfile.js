@@ -12,6 +12,7 @@ const MyProfile = () => {
   const [loading, setLoading] = useState(false)
   const [imagesPreview, setImagesPreview] = useState()
   const [didNumbers, setDidNumbers] = useState([])
+  const [userId, setUserId] = useState(null);
 
   const token = isAutheticated()
   const navigate = useNavigate()
@@ -25,20 +26,42 @@ const MyProfile = () => {
 
   const [sipUsername, setSipUsername] = useState('')
   const [sipPassword, setSipPassword] = useState('')
-  const [sipServer, setSipServer] = useState('')
-
+  const [sipServer, setSipServer] = useState('');
   const uaRef = useRef(null)
 
   useEffect(() => {
+    const token = isAutheticated();
+    if (token) {
+      setUserId(token.id);
+    }
     getData()
   }, [])
 
+  const fetchStoredSipDetails = async (userId) => {
+    try {
+      const response = await Axios.get(`/api/sip/user/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.data.success && response.data.data) {
+        setSipServer(response.data.data.sipServer || '');
+        setSipUsername(response.data.data.sipUser || '');
+        setSipPassword(response.data.data.sipPassword || '');
+      }
+    } catch (error) {
+      console.error('Error fetching stored SIP details:', error);
+    }
+  };
+
   const getData = async () => {
     try {
-      const res = await Axios.get(`/api/v1/user/details`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      const res = await Axios.get('/api/v1/user/details')
       if (res.data.success && res.data.user) {
+        setUserId(res.data.user._id);
+
         setOwnerDetails({
           name: res.data.user.name || '',
           email: res.data.user.email || '',
@@ -51,28 +74,25 @@ const MyProfile = () => {
         if (res.data.user.branchId) {
           fetchDidNumbers(res.data.user.branchId)
         }
+        await fetchStoredSipDetails(res.data.user._id);
       }
     } catch (err) {
-      console.error('Error fetching profile:', err.response?.data || err.message)
+      console.error('Error fetching user details:', err)
+      Swal.fire('Error', 'Failed to fetch user details', 'error')
     }
   }
 
   const fetchDidNumbers = async (branchId) => {
     try {
       const res = await Axios.get(`/api/branch/get_one/${branchId}`)
-      console.log('Branch API Response:', res.data)
-
       if (res.data.success && res.data.data) {
         const branchData = res.data.data
         if (branchData.didNumber) {
-          console.log('Found DID number:', branchData.didNumber)
           setDidNumbers([branchData.didNumber])
         } else {
-          console.warn('No DID number found in branch data')
           setDidNumbers([])
         }
       } else {
-        console.warn('Invalid API response format:', res.data)
         setDidNumbers([])
       }
     } catch (err) {
@@ -103,7 +123,7 @@ const MyProfile = () => {
 
     setLoading(true)
     try {
-      const res = await Axios.put(`/api/v1/user/update/profile`, formData, {
+      const res = await Axios.put('/api/v1/user/update/profile', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -120,20 +140,32 @@ const MyProfile = () => {
     }
   }
 
-  const handleSipRegister = (e) => {
+  const handleSipRegister = async (e) => {
     e.preventDefault();
 
+    if (!userId) {
+      Swal.fire('Error', 'User ID not available', 'error');
+      return;
+    }
+
+    // Fetch extension for selected DID
+    console.log('Fetching extension for DID:', sipUsername);
+    
+    const extension = await fetchExtensionForDid(sipUsername);
+    console.log('Fetched extension:', extension);
+    
+    if (!extension) {
+      Swal.fire('Error', 'Could not find extension for selected DID', 'error');
+      return;
+    }
+
     try {
-      // Split server and port
       const [serverIP, port] = sipServer.split(':');
-      
-      // Create WebSocket connection
-      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`);
-      
+      const socket = new JsSIP.WebSocketInterface(`ws://${sipServer}`);
+
       const configuration = {
         sockets: [socket],
-        // Don't include port in SIP URI domain
-        uri: `sip:${sipUsername}@${serverIP}`,
+        uri: `sip:${extension}@${serverIP}`,
         password: sipPassword,
         register: true,
         register_expires: 30,
@@ -147,24 +179,55 @@ const MyProfile = () => {
 
       const ua = new JsSIP.UA(configuration);
 
-      // Add event handlers
-      ua.on('registered', () => {
-        console.log('Successfully registered');
-        Swal.fire('Success', 'SIP Registration successful', 'success');
+      ua.on('registered', async () => {
+        try {
+          await Axios.post('/api/sip/create', {
+            userId: userId,
+            branchId: ownerDetails.branchId,
+            sipServer: sipServer,
+            sipUser: sipUsername, // This is still the DID, but we want to store extension below
+            sipPassword: sipPassword
+          });
+
+          // Save SIP details to localStorage for AppHeader.js
+          localStorage.setItem('sipDetails', JSON.stringify({
+            sipUsername: extension, // <-- store extension, not DID
+            sipPassword,
+            sipServer
+          }));
+
+          Swal.fire('Success', 'SIP Registration successful and details saved', 'success');
+        } catch (error) {
+          Swal.fire('Warning', 'SIP Registration successful but failed to save details', 'warning');
+        }
       });
 
       ua.on('registrationFailed', (response) => {
-        console.error('Registration failed:', response);
         Swal.fire('Error', `Registration failed: ${response.cause}`, 'error');
       });
 
       ua.start();
 
     } catch (err) {
-      console.error('SIP initialization error:', err);
       Swal.fire('Error', err.message, 'error');
     }
   }
+
+  const fetchExtensionForDid = async (didNumber) => {
+    try {
+      const response = await Axios.get(`/api/did-extensions/number/${didNumber}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Assuming response.data.data.extension contains the extension
+      if (response.data.success && response.data.data && response.data.data.extension) {
+        return response.data.data.extension;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error fetching extension for DID:', err);
+      return null;
+    }
+  };
 
   return (
     <main>
@@ -229,6 +292,24 @@ const MyProfile = () => {
                     Register SIP
                   </Button>
                 </Form>
+
+                {/* <div className="mt-4">
+                  <h4>SIP Details</h4>
+                  <Form>
+                    <Form.Group className="mb-3">
+                      <Form.Label>SIP Server</Form.Label>
+                      <Form.Control type="text" value={sipServer} readOnly />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>SIP User</Form.Label>
+                      <Form.Control type="text" value={sipUsername} readOnly />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                      <Form.Label>SIP Password</Form.Label>
+                      <Form.Control type="text" value={sipPassword} readOnly />
+                    </Form.Group>
+                  </Form>
+                </div> */}
               </div>
             </Col>
           </Row>
