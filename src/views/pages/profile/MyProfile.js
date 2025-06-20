@@ -161,7 +161,7 @@ const MyProfile = () => {
 
     try {
       const [serverIP, port] = sipServer.split(':');
-      const socket = new JsSIP.WebSocketInterface(`ws://${sipServer}`);
+      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`);
 
       const configuration = {
         sockets: [socket],
