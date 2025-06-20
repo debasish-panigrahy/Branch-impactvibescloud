@@ -125,7 +125,7 @@ function AppHeader() {
 
     // Create JsSIP UA if not already created
     if (!uaRef.current) {
-      const socket = new JsSIP.WebSocketInterface(`ws://${sipServer}`)
+      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`)
       const configuration = {
         sockets: [socket],
         uri: `sip:${sipUsername}@${sipServer}`,
@@ -270,7 +270,7 @@ function AppHeader() {
       const sipDetails = JSON.parse(localStorage.getItem('sipDetails') || '{}')
       const { sipUsername, sipPassword, sipServer } = sipDetails
 
-      const socket = new JsSIP.WebSocketInterface(`ws://${sipServer}`)
+      const socket = new JsSIP.WebSocketInterface(`wss://${sipServer}`)
       const configuration = {
         sockets: [socket],
         uri: `sip:${sipUsername}@${sipServer}`,
