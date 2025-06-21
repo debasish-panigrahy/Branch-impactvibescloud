@@ -159,6 +159,8 @@ function AppHeader() {
   const remoteAudioRef = useRef(null)
   const ringtoneRef = useRef({ pause: () => { }, currentTime: 0 }) // Dummy for now
 
+  const [uaReady, setUaReady] = useState(false);
+
   const handleDialerClick = () => {
     if (!isMicEnabled) {
       // Show microphone modal (do nothing, since it's already rendered when !isMicEnabled)
@@ -216,7 +218,23 @@ function AppHeader() {
         connection_recovery_max_interval: 30,
       };
       uaRef.current = new JsSIP.UA(configuration);
+
+      uaRef.current.on('connected', () => {
+        // WebSocket is connected
+      });
+      uaRef.current.on('registered', () => {
+        setUaReady(true); // UA is registered and ready
+      });
+
       uaRef.current.start();
+    }
+
+    // Wait until UA is ready
+    if (!uaReady) {
+      setCallStatus("Connecting to SIP server...");
+      // Optionally, retry after a short delay
+      setTimeout(() => handleCall(calleeNumber), 1000);
+      return;
     }
 
     try {
